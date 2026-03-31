@@ -2,21 +2,24 @@ import os
 import gradio as gr
 import google.generativeai as genai
 from tavily import TavilyClient
+import tempfile
 
-# --- 1. AUTHENTICATION ---
+# --- 1. AUTHENTICATION & CONFIG ---
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
 TAVILY_API_KEY = os.environ.get("TAVILY_API_KEY")
 
 if not GOOGLE_API_KEY or not TAVILY_API_KEY:
     raise ValueError("API Keys missing! Ensure GOOGLE_API_KEY and TAVILY_API_KEY are in Hugging Face Secrets.")
 
+# FORCE V1 STABLE API to stop the 404/v1beta error
+os.environ["GOOGLE_API_VERSION"] = "v1"
 genai.configure(api_key=GOOGLE_API_KEY)
 tavily = TavilyClient(api_key=TAVILY_API_KEY)
 
 # --- 2. THE LOGIC ---
 def get_sales_intelligence(company_name, persona):
     if not company_name:
-        return "### ⚠️ Please enter a company name."
+        return "### ⚠️ Please enter a company name.", None
     
     try:
         query = f"{company_name} business strategy 2026, technology challenges for {persona}"
@@ -25,8 +28,7 @@ def get_sales_intelligence(company_name, persona):
         
         context = "\n".join([f"Source: {r['url']}\nContent: {r['content']}" for r in results])
         
-        # FIX: Explicitly using 'models/' prefix and 'gemini-1.5-flash'
-        # If this still fails, try 'gemini-1.5-flash-002' 
+        # Using specific model path to bypass versioning issues
         model = genai.GenerativeModel(model_name='models/gemini-1.5-flash')
         
         prompt = (
@@ -38,93 +40,106 @@ def get_sales_intelligence(company_name, persona):
             "Use clean Markdown and bullet points."
         )
         
-        # Generate content with a safety check
         ai_res = model.generate_content(prompt)
         
-        # Handle cases where the AI might return an empty object
         if hasattr(ai_res, 'text'):
             response_text = ai_res.text
         else:
-            response_text = "### ⚠️ AI could not generate a response. Please check your API usage limits."
+            response_text = "### ⚠️ AI could not generate a response. Please check API quota."
         
         sources_list = "\n\n---\n**🔍 Research Sources:**\n" + "\n".join([f"• [{r['url'].split('//')[-1].split('/')[0]}]({r['url']})" for r in results])
         
-        return response_text + sources_list
+        full_output = response_text + sources_list
+        
+        # Generate temporary file for download
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".txt", mode="w", encoding="utf-8")
+        temp_file.write(f"ADA SALES INTELLIGENCE REPORT\nTarget: {company_name} - {persona}\n\n{full_output}")
+        temp_file.close()
+        
+        return full_output, temp_file.name
 
     except Exception as e:
-        # This will catch and display the exact error if it fails again
-        return f"### ❌ Error\n{str(e)}"
+        return f"### ❌ Error\n{str(e)}", None
 
 # --- 3. INTERFACE ---
 css = """
 footer {visibility: hidden}
-.gradio-container {background-color: #F0F4F8; font-family: 'Inter', sans-serif;}
+.gradio-container {background-color: #F4F7F9; font-family: 'Inter', sans-serif;}
 .header-container {
     background: linear-gradient(135deg, #041E41 0%, #008080 100%);
-    padding: 40px 20px;
-    border-radius: 15px;
+    padding: 45px 20px;
+    border-radius: 20px;
     color: white;
     text-align: center;
     margin-bottom: 30px;
-    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.15);
 }
 .pillar-row {
     display: flex;
-    gap: 20px;
+    gap: 15px;
     justify-content: center;
     margin-bottom: 30px;
     flex-wrap: wrap;
 }
 .pillar-card {
     background: white;
-    border: 2px solid transparent;
-    border-radius: 12px;
+    border-radius: 16px;
     padding: 20px;
-    width: 160px;
+    width: 170px;
     text-align: center;
     text-decoration: none !important;
     color: #041E41 !important;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    transition: all 0.3s ease;
+    box-shadow: 0 6px 12px rgba(0,0,0,0.05);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid #E0E7ED;
 }
 .pillar-card:hover { 
-    transform: translateY(-8px); 
-    border-color: #008080; 
-    box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+    transform: translateY(-10px); 
+    border-color: #008080;
+    box-shadow: 0 12px 20px rgba(0,128,128,0.2);
 }
-.pillar-card div { font-size: 2em; margin-bottom: 10px; }
+.pillar-icon { font-size: 2.8em; margin-bottom: 12px; display: block; }
+.download-box { margin-top: 20px; }
 """
 
 with gr.Blocks(css=css, theme=gr.themes.Soft(primary_hue="teal")) as demo:
     gr.HTML("""
     <div class="header-container">
-        <h1 style="color: white; margin: 0; font-size: 2.5em;">ADA Sales Intelligence</h1>
-        <p style="color: #E0E7ED; opacity: 0.9; font-size: 1.2em; margin-top: 15px; max-width: 800px; margin-left: auto; margin-right: auto;">
-            Empowering sales teams with AI-driven research to approach prospects with sharper strategy and deep context.
+        <h1 style="color: white; margin: 0; font-size: 2.8em; letter-spacing: -1px;">ADA Sales Intelligence</h1>
+        <p style="color: #E0E7ED; opacity: 0.9; font-size: 1.2em; margin-top: 15px; max-width: 700px; margin-left: auto; margin-right: auto;">
+            Strategic prospect research powered by AI. Extract insights, map to ADA pillars, and win the meeting.
         </p>
     </div>
     
     <div class="pillar-row">
-        <a href="https://adaglobal.com" target="_blank" class="pillar-card"><div>🔮</div><b>Identity</b></a>
-        <a href="https://adaglobal.com" target="_blank" class="pillar-card"><div>🎯</div><b>Personalization</b></a>
-        <a href="https://adaglobal.com" target="_blank" class="pillar-card"><div>🛒</div><b>Commerce</b></a>
-        <a href="https://adaglobal.com" target="_blank" class="pillar-card"><div>🧬</div><b>Data & AI</b></a>
+        <a href="https://adaglobal.com" target="_blank" class="pillar-card"><span class="pillar-icon">🆔</span><b>Identity</b></a>
+        <a href="https://adaglobal.com" target="_blank" class="pillar-card"><span class="pillar-icon">🎯</span><b>Personalization</b></a>
+        <a href="https://adaglobal.com" target="_blank" class="pillar-card"><span class="pillar-icon">🛒</span><b>Commerce</b></a>
+        <a href="https://adaglobal.com" target="_blank" class="pillar-card"><span class="pillar-icon">🤖</span><b>Data & AI</b></a>
     </div>
     """)
     
     with gr.Row(equal_height=False):
         with gr.Column(scale=1, variant="panel"):
-            gr.Markdown("### 🏢 Prospect Target")
+            gr.Markdown("### 🔍 **Command Center**")
             comp_input = gr.Textbox(label="Company Name", placeholder="e.g. Samsung Philippines", lines=1)
             pers_input = gr.Textbox(label="Prospect Persona", placeholder="e.g. Chief Digital Officer", lines=1)
-            run_btn = gr.Button("REVEAL INSIGHTS", variant="primary", size="lg")
+            run_btn = gr.Button("🚀 REVEAL INSIGHTS", variant="primary", size="lg")
+            
+            gr.Markdown("---")
+            download_component = gr.File(label="📥 Download Briefing", interactive=False)
             
         with gr.Column(scale=2):
-            output = gr.Markdown(value="### 👋 *Your strategic briefing will appear here...*")
+            output_display = gr.Markdown(value="### 👋 *Ready to research. Enter details on the left.*")
 
-    gr.HTML("<p style='text-align:center; padding: 30px 0;'>Powered by <a href='https://adaglobal.com' target='_blank' style='color: #008080; font-weight: bold;'>ADA Global</a></p>")
+    gr.HTML("<p style='text-align:center; padding: 40px 0; opacity: 0.7;'>Built for ADA Sales Teams | <a href='https://adaglobal.com' target='_blank' style='color: #008080;'>adaglobal.com</a></p>")
 
-    run_btn.click(fn=get_sales_intelligence, inputs=[comp_input, pers_input], outputs=output)
+    # Logic to handle both the text display and the file generation
+    run_btn.click(
+        fn=get_sales_intelligence, 
+        inputs=[comp_input, pers_input], 
+        outputs=[output_display, download_component]
+    )
 
 if __name__ == "__main__":
     demo.launch()
