@@ -4,14 +4,14 @@ import google.generativeai as genai
 from tavily import TavilyClient
 import tempfile
 
-# --- 1. AUTHENTICATION ---
+# --- 1. AUTHENTICATION & CONFIG ---
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
 TAVILY_API_KEY = os.environ.get("TAVILY_API_KEY")
 
 if not GOOGLE_API_KEY or not TAVILY_API_KEY:
     raise ValueError("API Keys missing! Ensure GOOGLE_API_KEY and TAVILY_API_KEY are in Hugging Face Secrets.")
 
-# Simple configuration - let the SDK handle the versioning automatically
+# Configure the SDK - let it handle versioning internally
 genai.configure(api_key=GOOGLE_API_KEY)
 tavily = TavilyClient(api_key=TAVILY_API_KEY)
 
@@ -21,17 +21,16 @@ def get_sales_intelligence(company_name, persona):
         return "### ⚠️ Please enter a company name.", None
     
     try:
-        # 1. Search for real-time data
-        # Note: Using 2026 as per current context
+        # 1. Search for real-time 2026 data via Tavily
         query = f"{company_name} business strategy 2026, technology challenges for {persona}"
         search_res = tavily.search(query=query, search_depth="advanced", max_results=5)
         results = search_res.get('results', [])
         
         context = "\n".join([f"Source: {r['url']}\nContent: {r['content']}" for r in results])
         
-        # 2. Initialize the model 
-        # FIX: Using 'gemini-1.5-flash' without the 'models/' prefix is more robust across SDK versions
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        # 2. Initialize the modern model
+        # FIX: gemini-1.5-flash is legacy. gemini-2.5-flash is the current production standard.
+        model = genai.GenerativeModel('gemini-2.5-flash')
         
         prompt = (
             f"Target: {persona} at {company_name}. Research Context: {context}. "
@@ -45,19 +44,17 @@ def get_sales_intelligence(company_name, persona):
         # 3. Generate content
         ai_res = model.generate_content(prompt)
         
-        # Access the text safely
         if ai_res and hasattr(ai_res, 'text'):
             response_text = ai_res.text
         else:
-            # Handle cases where safety filters might block the response
-            response_text = "### ⚠️ AI Research Blocked. The model could not generate a response based on the search results."
+            response_text = "### ⚠️ AI Research Blocked. Please check API quota or content safety filters."
         
-        sources_list = "\n\n---\n**🔍 Research Sources:**\n" + "\n".join([f"• [{r['url'].split('//')[-1].split('/')[0]}]({r['url']})" for r in results])
+        sources_list = "\n\n---\n**🔍 Research Sources:**\n" + \
+                       "\n".join([f"• [{r['url'].split('//')[-1].split('/')[0]}]({r['url']})" for r in results])
         
         full_output = response_text + sources_list
         
         # 4. Generate Downloadable File
-        # Use a context manager for the temporary file to ensure it's handled properly
         with tempfile.NamedTemporaryFile(delete=False, suffix=".txt", mode="w", encoding="utf-8") as temp_file:
             temp_file.write(f"ADA SALES INTELLIGENCE REPORT\nTarget: {company_name} | {persona}\n" + "="*30 + f"\n\n{full_output}")
             temp_path = temp_file.name
@@ -65,11 +62,10 @@ def get_sales_intelligence(company_name, persona):
         return full_output, temp_path
 
     except Exception as e:
-        # Return the specific error message to the UI for debugging
+        # Return specific error to UI for debugging
         return f"### ❌ Error\n{str(e)}", None
 
 # --- 3. INTERFACE ---
-# (Keep your existing CSS and gr.Blocks layout as they were visually correct)
 css = """
 footer {visibility: hidden}
 .gradio-container {background-color: #F8FAFC; font-family: 'Inter', sans-serif;}
@@ -95,7 +91,6 @@ footer {visibility: hidden}
     padding: 20px;
     width: 170px;
     text-align: center;
-    text-decoration: none !important;
     color: #041E41 !important;
     box-shadow: 0 4px 10px rgba(0,0,0,0.05);
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
