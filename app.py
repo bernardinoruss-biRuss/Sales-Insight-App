@@ -21,12 +21,10 @@ def get_sales_intelligence(company_name, persona):
     
     try:
         # 1. BROAD STRATEGIC SEARCH
-        # We search for financials, news, and persona-specific priorities
         search_query = (
-            f"{company_name} financial information news 2025 2026, "
-            f"{company_name} strategic business initiatives, "
+            f"{company_name} business strategy news 2025 2026, "
             f"challenges for {persona} at {company_name}, "
-            f"{company_name} official website and LinkedIn"
+            f"{company_name} official goals and digital transformation"
         )
         
         search_res = tavily.search(query=search_query, search_depth="advanced", max_results=8)
@@ -34,8 +32,8 @@ def get_sales_intelligence(company_name, persona):
         
         context = "\n".join([f"Source: {r['url']}\nContent: {r['content']}" for r in results])
         
-        # 2. STRATEGIC SALES PROMPT
-        model = genai.GenerativeModel('gemini-2.5-flash')
+        # FIXED: Using a valid model version (gemini-2.0-flash or 1.5-flash-latest)
+        model = genai.GenerativeModel('gemini-1.5-flash-latest')
         
         prompt = f"""
         Act as a Senior Sales Strategist for ADA Global. 
@@ -45,29 +43,27 @@ def get_sales_intelligence(company_name, persona):
         Provide a "Battle-Ready" Strategic Briefing using this exact structure:
 
         ## 🏢 Company Intelligence
-        * **Financials & News:** Summarize recent public financial health, stock trends (if public), or major funding/revenue news.
-        * **Strategic Initiatives:** What are their big 2026 goals? (e.g., expansion, digital transformation, cost-saving).
-        * **Market Entry Point:** Based on the above, where is the "gap" ADA can fill?
+        * **Financials & News:** Summarize recent health and major news.
+        * **Strategic Initiatives:** What are their big 2026 goals?
+        * **Market Entry Point:** Where is the "gap" ADA can fill?
 
         ## 🎯 Persona Strategy: {persona}
-        * **How to Approach:** What is the psychological or professional "angle" for this persona?
-        * **The ADA Hook:** A 2-sentence opening line for an email or LinkedIn DM that links a company initiative to an ADA solution.
-        * **The Value Proposition:** How to frame ADA's offerings specifically for their KPIs.
+        * **How to Approach:** Professional "angle" for this persona.
+        * **The ADA Hook:** A 2-sentence opening line for email/LinkedIn.
+        * **The Value Proposition:** frame ADA's offerings for their KPIs.
 
         ## 💎 ADA Pillar Alignment
-        Map the current company situation to ADA's 4 Growth Pillars:
-        1. **Identity:** (e.g. How to help them with customer acquisition in a cookieless world)
-        2. **Personalization & Orchestration:** (e.g. Solving their churn issues mentioned in news)
-        3. **Commerce:** (e.g. Optimizing their marketplace or retail presence)
-        4. **Data & AI Foundation:** (e.g. Clean room solutions for their fragmented data)
+        1. **Identity**
+        2. **Personalization & Orchestration**
+        3. **Commerce**
+        4. **Data & AI Foundation**
 
         ## 🛠️ Meeting Preparation
-        * **LinkedIn Checklist:** What should the salesperson look for on this persona's LinkedIn profile before the meeting?
-        * **Website Recon:** One specific thing to check on {company_name}'s website.
-        * **Discovery Questions:** 3 high-impact questions to ask in the first meeting to uncover pain points.
+        * **LinkedIn Checklist**
+        * **Website Recon**
+        * **Discovery Questions:** 3 high-impact questions.
         """
 
-        # 3. Generate content
         ai_res = model.generate_content(prompt)
         
         if ai_res and hasattr(ai_res, 'text'):
@@ -81,16 +77,17 @@ def get_sales_intelligence(company_name, persona):
         full_output = response_text + sources_list
         
         # 4. Generate Downloadable File
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".txt", mode="w", encoding="utf-8") as temp_file:
+        # We use a persistent prefix so the file is easily identified
+        fd, temp_path = tempfile.mkstemp(suffix=".txt", prefix="ADA_Briefing_")
+        with os.fdopen(fd, 'w', encoding="utf-8") as temp_file:
             temp_file.write(f"ADA STRATEGIC BRIEFING\nTarget: {company_name} | {persona}\n" + "="*40 + f"\n\n{full_output}")
-            temp_path = temp_file.name
         
         return full_output, temp_path
 
     except Exception as e:
         return f"### ❌ Error\n{str(e)}", None
 
-# --- 3. INTERFACE (CSS remains the same) ---
+# --- 3. INTERFACE ---
 css = """
 footer {visibility: hidden}
 .gradio-container {background-color: #F8FAFC; font-family: 'Inter', sans-serif;}
@@ -102,38 +99,44 @@ footer {visibility: hidden}
     text-align: center;
     margin-bottom: 30px;
     box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+    max-width: 1100px;
+    margin-left: auto;
+    margin-right: auto;
 }
 .pillar-row {
     display: flex;
     gap: 15px;
     justify-content: center;
-    margin-bottom: 30px;
-    flex-wrap: wrap;
+    margin: -60px auto 40px auto;
+    max-width: 1000px;
+    flex-wrap: nowrap;
+    padding: 0 10px;
 }
 .pillar-card {
     background: white;
     border-radius: 16px;
-    padding: 20px;
-    width: 170px;
+    padding: 20px 10px;
+    flex: 1;
     text-align: center;
     color: #041E41 !important;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 10px 15px rgba(0,0,0,0.05);
+    transition: all 0.4s ease;
     border: 1px solid #EDF2F7;
+    min-width: 140px;
 }
 .pillar-card:hover { 
-    transform: translateY(-12px); 
+    transform: translateY(-10px); 
     border-color: #008080;
     box-shadow: 0 15px 25px rgba(0,128,128,0.15);
 }
-.pillar-icon { font-size: 3em; margin-bottom: 15px; display: block; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.1)); }
+.pillar-icon { font-size: 2.5em; margin-bottom: 10px; display: block; }
 """
 
-with gr.Blocks(css=css, theme=gr.themes.Soft(primary_hue="teal", font=["Inter", "sans-serif"])) as demo:
+with gr.Blocks(css=css, theme=gr.themes.Soft(primary_hue="teal")) as demo:
     gr.HTML("""
     <div class="header-container">
         <h1 style="color: white; margin: 0; font-size: 3em; font-weight: 800;">ADA Sales Intelligence</h1>
-        <p style="color: #E2E8F0; font-size: 1.2em; margin-top: 15px; max-width: 750px; margin-left: auto; margin-right: auto; line-height: 1.6;">
+        <p style="color: #E2E8F0; font-size: 1.1em; margin-top: 15px; max-width: 750px; margin-left: auto; margin-right: auto; line-height: 1.6;">
             Senior Sales Strategist Mode: Real-time financial data, trigger events, and persona-based coaching.
         </p>
     </div>
@@ -154,10 +157,11 @@ with gr.Blocks(css=css, theme=gr.themes.Soft(primary_hue="teal", font=["Inter", 
             run_btn = gr.Button("🔍 GENERATE BRIEFING", variant="primary", size="lg")
             
             gr.Markdown("---")
+            # This will now receive the temp_path from the function
             download_btn = gr.File(label="📥 Export Briefing (.txt)", interactive=False)
             
         with gr.Column(scale=2):
-            output_markdown = gr.Markdown(value="### 👋 *Your strategic briefing will appear here after research...*")
+            output_markdown = gr.Markdown(value="### 👋 *Your strategic briefing will appear here...*")
 
     gr.HTML("<p style='text-align:center; padding: 40px 0; color: #718096;'>Powered by <b>ADA Global</b> Sales Enablement</p>")
 
