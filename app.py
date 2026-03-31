@@ -25,8 +25,8 @@ def get_sales_intelligence(company_name, persona):
         
         context = "\n".join([f"Source: {r['url']}\nContent: {r['content']}" for r in results])
         
-        # Using 'gemini-1.5-flash-latest' to ensure we hit the active endpoint
-        model = genai.GenerativeModel('gemini-1.5-flash-latest')
+        # Using gemini-1.5-flash for speed and reliability
+        model = genai.GenerativeModel('gemini-1.5-flash')
         
         prompt = (
             f"Target: {persona} at {company_name}. Research Context: {context}. "
@@ -87,7 +87,6 @@ footer {visibility: hidden}
 .pillar-card div { font-size: 2em; margin-bottom: 10px; }
 """
 
-# Fixed the theme line by removing 'spacing_size="large"' which was causing the error
 with gr.Blocks(css=css, theme=gr.themes.Soft(primary_hue="teal")) as demo:
     gr.HTML("""
     <div class="header-container">
@@ -113,7 +112,8 @@ with gr.Blocks(css=css, theme=gr.themes.Soft(primary_hue="teal")) as demo:
             run_btn = gr.Button("REVEAL INSIGHTS", variant="primary", size="lg")
             
         with gr.Column(scale=2):
-            output = gr.Markdown(value="### 👋 *Your strategic briefing will appear here...*", container=True)
+            # FIXED: Removed container=True which caused the TypeError
+            output = gr.Markdown(value="### 👋 *Your strategic briefing will appear here...*")
 
     gr.HTML("<p style='text-align:center; padding: 30px 0;'>Powered by <a href='https://adaglobal.com' target='_blank' style='color: #008080; font-weight: bold;'>ADA Global</a></p>")
 
