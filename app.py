@@ -5,6 +5,7 @@ from tavily import TavilyClient
 import tempfile
 
 # --- 1. AUTHENTICATION & CONFIG ---
+# Ensure these are set in your Hugging Face Space Secrets
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
 TAVILY_API_KEY = os.environ.get("TAVILY_API_KEY")
 
@@ -20,11 +21,11 @@ def get_sales_intelligence(company_name, persona):
         return "### ⚠️ Please enter a company name.", None
     
     try:
-        # 1. BROAD STRATEGIC SEARCH
+        # 1. STRATEGIC SEARCH
         search_query = (
             f"{company_name} business strategy news 2025 2026, "
             f"challenges for {persona} at {company_name}, "
-            f"{company_name} official goals and digital transformation"
+            f"{company_name} digital transformation and corporate goals"
         )
         
         search_res = tavily.search(query=search_query, search_depth="advanced", max_results=8)
@@ -32,7 +33,7 @@ def get_sales_intelligence(company_name, persona):
         
         context = "\n".join([f"Source: {r['url']}\nContent: {r['content']}" for r in results])
         
-        # FIXED: Using a valid model version (gemini-2.0-flash or 1.5-flash-latest)
+        # 2. GENERATE BRIEFING (Fixed model version)
         model = genai.GenerativeModel('gemini-1.5-flash-latest')
         
         prompt = f"""
@@ -50,7 +51,7 @@ def get_sales_intelligence(company_name, persona):
         ## 🎯 Persona Strategy: {persona}
         * **How to Approach:** Professional "angle" for this persona.
         * **The ADA Hook:** A 2-sentence opening line for email/LinkedIn.
-        * **The Value Proposition:** frame ADA's offerings for their KPIs.
+        * **The Value Proposition:** Frame ADA's offerings for their KPIs.
 
         ## 💎 ADA Pillar Alignment
         1. **Identity**
@@ -76,9 +77,8 @@ def get_sales_intelligence(company_name, persona):
         
         full_output = response_text + sources_list
         
-        # 4. Generate Downloadable File
-        # We use a persistent prefix so the file is easily identified
-        fd, temp_path = tempfile.mkstemp(suffix=".txt", prefix="ADA_Briefing_")
+        # 3. Generate Downloadable File
+        fd, temp_path = tempfile.mkstemp(suffix=".txt", prefix=f"ADA_{company_name.replace(' ', '_')}_")
         with os.fdopen(fd, 'w', encoding="utf-8") as temp_file:
             temp_file.write(f"ADA STRATEGIC BRIEFING\nTarget: {company_name} | {persona}\n" + "="*40 + f"\n\n{full_output}")
         
@@ -87,10 +87,11 @@ def get_sales_intelligence(company_name, persona):
     except Exception as e:
         return f"### ❌ Error\n{str(e)}", None
 
-# --- 3. INTERFACE ---
+# --- 3. INTERFACE (CSS & Gradio Blocks) ---
 css = """
 footer {visibility: hidden}
 .gradio-container {background-color: #F8FAFC; font-family: 'Inter', sans-serif;}
+
 .header-container {
     background: linear-gradient(135deg, #041E41 0%, #008080 100%);
     padding: 50px 20px;
@@ -103,6 +104,7 @@ footer {visibility: hidden}
     margin-left: auto;
     margin-right: auto;
 }
+
 .pillar-row {
     display: flex;
     gap: 15px;
@@ -112,27 +114,33 @@ footer {visibility: hidden}
     flex-wrap: nowrap;
     padding: 0 10px;
 }
+
 .pillar-card {
     background: white;
     border-radius: 16px;
     padding: 20px 10px;
     flex: 1;
     text-align: center;
+    text-decoration: none !important;
     color: #041E41 !important;
     box-shadow: 0 10px 15px rgba(0,0,0,0.05);
     transition: all 0.4s ease;
     border: 1px solid #EDF2F7;
     min-width: 140px;
+    display: block;
 }
+
 .pillar-card:hover { 
     transform: translateY(-10px); 
     border-color: #008080;
     box-shadow: 0 15px 25px rgba(0,128,128,0.15);
 }
+
 .pillar-icon { font-size: 2.5em; margin-bottom: 10px; display: block; }
 """
 
 with gr.Blocks(css=css, theme=gr.themes.Soft(primary_hue="teal")) as demo:
+    # Header with Clickable Pillars
     gr.HTML("""
     <div class="header-container">
         <h1 style="color: white; margin: 0; font-size: 3em; font-weight: 800;">ADA Sales Intelligence</h1>
@@ -142,10 +150,10 @@ with gr.Blocks(css=css, theme=gr.themes.Soft(primary_hue="teal")) as demo:
     </div>
     
     <div class="pillar-row">
-        <div class="pillar-card"><span class="pillar-icon">🆔</span><b>Identity</b></div>
-        <div class="pillar-card"><span class="pillar-icon">🎯</span><b>Personalization</b></div>
-        <div class="pillar-card"><span class="pillar-icon">🛒</span><b>Commerce</b></div>
-        <div class="pillar-card"><span class="pillar-icon">🤖</span><b>Data & AI</b></div>
+        <a href="https://adaglobal.com" target="_blank" class="pillar-card"><span class="pillar-icon">🆔</span><b>Identity</b></a>
+        <a href="https://adaglobal.com" target="_blank" class="pillar-card"><span class="pillar-icon">🎯</span><b>Personalization</b></a>
+        <a href="https://adaglobal.com" target="_blank" class="pillar-card"><span class="pillar-icon">🛒</span><b>Commerce</b></a>
+        <a href="https://adaglobal.com" target="_blank" class="pillar-card"><span class="pillar-icon">🤖</span><b>Data & AI</b></a>
     </div>
     """)
     
@@ -157,7 +165,6 @@ with gr.Blocks(css=css, theme=gr.themes.Soft(primary_hue="teal")) as demo:
             run_btn = gr.Button("🔍 GENERATE BRIEFING", variant="primary", size="lg")
             
             gr.Markdown("---")
-            # This will now receive the temp_path from the function
             download_btn = gr.File(label="📥 Export Briefing (.txt)", interactive=False)
             
         with gr.Column(scale=2):
@@ -165,6 +172,7 @@ with gr.Blocks(css=css, theme=gr.themes.Soft(primary_hue="teal")) as demo:
 
     gr.HTML("<p style='text-align:center; padding: 40px 0; color: #718096;'>Powered by <b>ADA Global</b> Sales Enablement</p>")
 
+    # The Logic Trigger
     run_btn.click(
         fn=get_sales_intelligence, 
         inputs=[comp_input, pers_input], 
