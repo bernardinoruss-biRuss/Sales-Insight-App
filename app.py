@@ -25,17 +25,22 @@ def get_sales_intelligence(company_name, persona):
         
         context = "\n".join([f"Source: {r['url']}\nContent: {r['content']}" for r in results])
         
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        # FIX: Changed to 'gemini-1.5-flash-latest' to avoid the 404 error
+        model = genai.GenerativeModel('gemini-1.5-flash-latest')
+        
         prompt = (
-            f"Target: {persona} at {company_name}. Research: {context}. "
-            "Task: Provide a brief briefing on Gaps, ADA Pillar fit (Identity, Personalization & Orchestration, "
-            "Commerce, Data & AI Foundation), and a catchy 2-sentence hook. Use bullet points."
+            f"Target: {persona} at {company_name}. Research Context: {context}. "
+            "Task: Provide a high-level briefing for a sales professional. "
+            "1. Identify Gaps/Challenges. "
+            "2. Map to ADA Pillars: Identity, Personalization & Orchestration, Commerce, or Data & AI Foundation. "
+            "3. Provide a catchy 2-sentence 'Hook' or opening line. "
+            "Use clean Markdown and bullet points."
         )
         
         ai_res = model.generate_content(prompt)
         response_text = ai_res.text
         
-        sources_list = "\n\n---\n**🔍 Sources:**\n" + "\n".join([f"• [{r['url'].split('//')[-1].split('/')[0]}]({r['url']})" for r in results])
+        sources_list = "\n\n---\n**🔍 Research Sources:**\n" + "\n".join([f"• [{r['url'].split('//')[-1].split('/')[0]}]({r['url']})" for r in results])
         
         return response_text + sources_list
 
@@ -43,48 +48,56 @@ def get_sales_intelligence(company_name, persona):
         return f"### ❌ Error\n{str(e)}"
 
 # --- 3. INTERFACE ---
+# Improved CSS for better spacing and professional ADA branding colors
 css = """
 footer {visibility: hidden}
-.gradio-container {background-color: #F8FBFE; font-family: 'Inter', sans-serif;}
+.gradio-container {background-color: #F0F4F8; font-family: 'Inter', sans-serif;}
 .header-container {
     background: linear-gradient(135deg, #041E41 0%, #008080 100%);
-    padding: 30px;
+    padding: 40px 20px;
     border-radius: 15px;
     color: white;
     text-align: center;
-    margin-bottom: 20px;
+    margin-bottom: 30px;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
 }
 .pillar-row {
     display: flex;
-    gap: 15px;
+    gap: 20px;
     justify-content: center;
-    margin-bottom: 20px;
+    margin-bottom: 30px;
     flex-wrap: wrap;
 }
 .pillar-card {
     background: white;
-    border: 1px solid #E0E7ED;
+    border: 2px solid transparent;
     border-radius: 12px;
-    padding: 15px;
-    width: 140px;
+    padding: 20px;
+    width: 160px;
     text-align: center;
     text-decoration: none !important;
     color: #041E41 !important;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
     transition: all 0.3s ease;
 }
-.pillar-card:hover { transform: translateY(-5px); border-color: #008080; }
+.pillar-card:hover { 
+    transform: translateY(-8px); 
+    border-color: #008080; 
+    box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+}
+.pillar-card div { font-size: 2em; margin-bottom: 10px; }
+.input-box { background: white; padding: 20px; border-radius: 12px; border: 1px solid #D1DBE5; }
 """
 
-with gr.Blocks(css=css, theme=gr.themes.Soft(primary_hue="teal")) as demo:
+with gr.Blocks(css=css, theme=gr.themes.Soft(primary_hue="teal", spacing_size="large")) as demo:
     gr.HTML("""
     <div class="header-container">
-        <h1 style="color: white; margin: 0;">ADA Sales Intelligence</h1>
-        <p style="color: #E0E7ED; opacity: 0.9; font-size: 1.1em; margin-top: 10px;">
-            This app uses AI to generate research and insights that enable sales teams <br>
-            to approach prospects with sharper strategy and context.
+        <h1 style="color: white; margin: 0; font-size: 2.5em;">ADA Sales Intelligence</h1>
+        <p style="color: #E0E7ED; opacity: 0.9; font-size: 1.2em; margin-top: 15px; max-width: 800px; margin-left: auto; margin-right: auto;">
+            Empowering sales teams with AI-driven research to approach prospects with sharper strategy and deep context.
         </p>
     </div>
+    
     <div class="pillar-row">
         <a href="https://adaglobal.com" target="_blank" class="pillar-card"><div>🔮</div><b>Identity</b></a>
         <a href="https://adaglobal.com" target="_blank" class="pillar-card"><div>🎯</div><b>Personalization</b></a>
@@ -93,16 +106,17 @@ with gr.Blocks(css=css, theme=gr.themes.Soft(primary_hue="teal")) as demo:
     </div>
     """)
     
-    with gr.Row():
-        with gr.Column(scale=1):
-            comp_input = gr.Textbox(label="Company Name", placeholder="e.g. Samsung")
-            pers_input = gr.Textbox(label="Prospect Persona", placeholder="e.g. Marketing Director")
-            run_btn = gr.Button("REVEAL INSIGHTS", variant="primary")
+    with gr.Row(equal_height=False):
+        with gr.Column(scale=1, variant="panel"):
+            gr.Markdown("### 🏢 Prospect Target")
+            comp_input = gr.Textbox(label="Company Name", placeholder="e.g. Samsung Philippines", lines=1)
+            pers_input = gr.Textbox(label="Prospect Persona", placeholder="e.g. Chief Digital Officer", lines=1)
+            run_btn = gr.Button("REVEAL INSIGHTS", variant="primary", size="lg")
             
         with gr.Column(scale=2):
-            output = gr.Markdown(value="### 👋 Insights will appear here...")
+            output = gr.Markdown(value="### 👋 *Your strategic briefing will appear here...*", container=True)
 
-    gr.HTML("<p style='text-align:center; padding-top:20px;'>Visit <a href='https://adaglobal.com' style='color: #008080;'>ADA Global</a></p>")
+    gr.HTML("<p style='text-align:center; padding: 30px 0;'>Powered by <a href='https://adaglobal.com' style='color: #008080; font-weight: bold;'>ADA Global</a></p>")
 
     run_btn.click(fn=get_sales_intelligence, inputs=[comp_input, pers_input], outputs=output)
 
