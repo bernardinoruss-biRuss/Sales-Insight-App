@@ -25,8 +25,8 @@ def get_sales_intelligence(company_name, persona):
         
         context = "\n".join([f"Source: {r['url']}\nContent: {r['content']}" for r in results])
         
-        # Using gemini-1.5-flash for speed and reliability
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        # FIXED: Added '-latest' to resolve the 404 error
+        model = genai.GenerativeModel('gemini-1.5-flash-latest')
         
         prompt = (
             f"Target: {persona} at {company_name}. Research Context: {context}. "
@@ -112,7 +112,6 @@ with gr.Blocks(css=css, theme=gr.themes.Soft(primary_hue="teal")) as demo:
             run_btn = gr.Button("REVEAL INSIGHTS", variant="primary", size="lg")
             
         with gr.Column(scale=2):
-            # FIXED: Removed container=True which caused the TypeError
             output = gr.Markdown(value="### 👋 *Your strategic briefing will appear here...*")
 
     gr.HTML("<p style='text-align:center; padding: 30px 0;'>Powered by <a href='https://adaglobal.com' target='_blank' style='color: #008080; font-weight: bold;'>ADA Global</a></p>")
