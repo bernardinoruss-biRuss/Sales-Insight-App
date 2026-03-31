@@ -8,7 +8,7 @@ sdk_version: 4.44.1
 app_file: app.py
 pinned: false
 license: apache-2.0
-short_description: AI Sales Intelligence Tool
+short_description: AI-powered research and insights for sales strategy.
 ---
 
 # Sales Intelligence App
