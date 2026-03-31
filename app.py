@@ -25,7 +25,7 @@ def get_sales_intelligence(company_name, persona):
         
         context = "\n".join([f"Source: {r['url']}\nContent: {r['content']}" for r in results])
         
-        # FIX: Changed to 'gemini-1.5-flash-latest' to avoid the 404 error
+        # Using 'gemini-1.5-flash-latest' to ensure we hit the active endpoint
         model = genai.GenerativeModel('gemini-1.5-flash-latest')
         
         prompt = (
@@ -48,7 +48,6 @@ def get_sales_intelligence(company_name, persona):
         return f"### ❌ Error\n{str(e)}"
 
 # --- 3. INTERFACE ---
-# Improved CSS for better spacing and professional ADA branding colors
 css = """
 footer {visibility: hidden}
 .gradio-container {background-color: #F0F4F8; font-family: 'Inter', sans-serif;}
@@ -86,10 +85,10 @@ footer {visibility: hidden}
     box-shadow: 0 8px 16px rgba(0,0,0,0.15);
 }
 .pillar-card div { font-size: 2em; margin-bottom: 10px; }
-.input-box { background: white; padding: 20px; border-radius: 12px; border: 1px solid #D1DBE5; }
 """
 
-with gr.Blocks(css=css, theme=gr.themes.Soft(primary_hue="teal", spacing_size="large")) as demo:
+# Fixed the theme line by removing 'spacing_size="large"' which was causing the error
+with gr.Blocks(css=css, theme=gr.themes.Soft(primary_hue="teal")) as demo:
     gr.HTML("""
     <div class="header-container">
         <h1 style="color: white; margin: 0; font-size: 2.5em;">ADA Sales Intelligence</h1>
@@ -116,7 +115,7 @@ with gr.Blocks(css=css, theme=gr.themes.Soft(primary_hue="teal", spacing_size="l
         with gr.Column(scale=2):
             output = gr.Markdown(value="### 👋 *Your strategic briefing will appear here...*", container=True)
 
-    gr.HTML("<p style='text-align:center; padding: 30px 0;'>Powered by <a href='https://adaglobal.com' style='color: #008080; font-weight: bold;'>ADA Global</a></p>")
+    gr.HTML("<p style='text-align:center; padding: 30px 0;'>Powered by <a href='https://adaglobal.com' target='_blank' style='color: #008080; font-weight: bold;'>ADA Global</a></p>")
 
     run_btn.click(fn=get_sales_intelligence, inputs=[comp_input, pers_input], outputs=output)
 
