@@ -11,4 +11,4 @@ license: apache-2.0
 ---
 
 # Sales Intelligence App
-This app uses AI to generate research and insights that enable sales teams to approach prospects with sharper strategy and context.
+This app uses AI to generate research and insights for sales teams.
