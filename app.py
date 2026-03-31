@@ -25,8 +25,8 @@ def get_sales_intelligence(company_name, persona):
         
         context = "\n".join([f"Source: {r['url']}\nContent: {r['content']}" for r in results])
         
-        # FIXED: Added '-latest' to resolve the 404 error
-        model = genai.GenerativeModel('gemini-1.5-flash-latest')
+        # CHANGED: Using the stable model ID
+        model = genai.GenerativeModel(model_name='models/gemini-1.5-flash')
         
         prompt = (
             f"Target: {persona} at {company_name}. Research Context: {context}. "
@@ -37,9 +37,13 @@ def get_sales_intelligence(company_name, persona):
             "Use clean Markdown and bullet points."
         )
         
+        # Explicitly calling the content generation
         ai_res = model.generate_content(prompt)
-        response_text = ai_res.text
         
+        if not ai_res.text:
+            return "### ⚠️ AI returned an empty response. Check API quota."
+            
+        response_text = ai_res.text
         sources_list = "\n\n---\n**🔍 Research Sources:**\n" + "\n".join([f"• [{r['url'].split('//')[-1].split('/')[0]}]({r['url']})" for r in results])
         
         return response_text + sources_list
