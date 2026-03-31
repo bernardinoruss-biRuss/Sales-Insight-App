@@ -5,7 +5,6 @@ from tavily import TavilyClient
 import tempfile
 
 # --- 1. AUTHENTICATION & CONFIG ---
-# Ensure these are set in your Hugging Face Space Secrets
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
 TAVILY_API_KEY = os.environ.get("TAVILY_API_KEY")
 
@@ -33,8 +32,8 @@ def get_sales_intelligence(company_name, persona):
         
         context = "\n".join([f"Source: {r['url']}\nContent: {r['content']}" for r in results])
         
-        # 2. GENERATE BRIEFING (Fixed model version)
-        model = genai.GenerativeModel('gemini-1.5-flash-latest')
+        # 2. GENERATE BRIEFING (Updated to Gemini 2.5 Flash for 2026 compatibility)
+        model = genai.GenerativeModel('gemini-2.5-flash')
         
         prompt = f"""
         Act as a Senior Sales Strategist for ADA Global. 
@@ -109,8 +108,8 @@ footer {visibility: hidden}
     display: flex;
     gap: 15px;
     justify-content: center;
-    margin: -60px auto 40px auto;
-    max-width: 1000px;
+    margin: -60px auto 40px auto; /* Pulls pillars up to overlap header */
+    max-width: 1000px; /* Aligns with header width */
     flex-wrap: nowrap;
     padding: 0 10px;
 }
@@ -119,7 +118,7 @@ footer {visibility: hidden}
     background: white;
     border-radius: 16px;
     padding: 20px 10px;
-    flex: 1;
+    flex: 1; /* Forces all 4 cards to be equal width */
     text-align: center;
     text-decoration: none !important;
     color: #041E41 !important;
@@ -137,6 +136,10 @@ footer {visibility: hidden}
 }
 
 .pillar-icon { font-size: 2.5em; margin-bottom: 10px; display: block; }
+
+@media (max-width: 768px) {
+    .pillar-row { flex-wrap: wrap; margin-top: 20px; }
+}
 """
 
 with gr.Blocks(css=css, theme=gr.themes.Soft(primary_hue="teal")) as demo:
@@ -172,7 +175,6 @@ with gr.Blocks(css=css, theme=gr.themes.Soft(primary_hue="teal")) as demo:
 
     gr.HTML("<p style='text-align:center; padding: 40px 0; color: #718096;'>Powered by <b>ADA Global</b> Sales Enablement</p>")
 
-    # The Logic Trigger
     run_btn.click(
         fn=get_sales_intelligence, 
         inputs=[comp_input, pers_input], 
