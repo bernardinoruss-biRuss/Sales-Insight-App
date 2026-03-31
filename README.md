@@ -8,8 +8,8 @@ sdk_version: 4.44.1
 app_file: app.py
 pinned: false
 license: apache-2.0
-short_description: AI Sales Intelligence Tool for ADA Global
+short_description: AI Sales Intelligence Tool
 ---
 
 # Sales Intelligence App
-This app provides AI-driven research and insights for sales professionals.
+This app uses AI to generate research and insights that enable sales teams to approach prospects with sharper strategy and context.
