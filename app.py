@@ -25,7 +25,8 @@ def get_sales_intelligence(company_name, persona):
         
         context = "\n".join([f"Source: {r['url']}\nContent: {r['content']}" for r in results])
         
-        # CHANGED: Using the stable model ID
+        # FIX: Explicitly using 'models/' prefix and 'gemini-1.5-flash'
+        # If this still fails, try 'gemini-1.5-flash-002' 
         model = genai.GenerativeModel(model_name='models/gemini-1.5-flash')
         
         prompt = (
@@ -37,18 +38,21 @@ def get_sales_intelligence(company_name, persona):
             "Use clean Markdown and bullet points."
         )
         
-        # Explicitly calling the content generation
+        # Generate content with a safety check
         ai_res = model.generate_content(prompt)
         
-        if not ai_res.text:
-            return "### ⚠️ AI returned an empty response. Check API quota."
-            
-        response_text = ai_res.text
+        # Handle cases where the AI might return an empty object
+        if hasattr(ai_res, 'text'):
+            response_text = ai_res.text
+        else:
+            response_text = "### ⚠️ AI could not generate a response. Please check your API usage limits."
+        
         sources_list = "\n\n---\n**🔍 Research Sources:**\n" + "\n".join([f"• [{r['url'].split('//')[-1].split('/')[0]}]({r['url']})" for r in results])
         
         return response_text + sources_list
 
     except Exception as e:
+        # This will catch and display the exact error if it fails again
         return f"### ❌ Error\n{str(e)}"
 
 # --- 3. INTERFACE ---
