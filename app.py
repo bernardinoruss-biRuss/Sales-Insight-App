@@ -42,7 +42,7 @@ def get_sales_intelligence(company_name, persona):
     except Exception as e:
         return f"### ❌ Error\n{str(e)}"
 
-# --- 3. INTERFACE & CSS ---
+# --- 3. INTERFACE ---
 css = """
 footer {visibility: hidden}
 .gradio-container {background-color: #F8FBFE; font-family: 'Inter', sans-serif;}
@@ -80,7 +80,10 @@ with gr.Blocks(css=css, theme=gr.themes.Soft(primary_hue="teal")) as demo:
     gr.HTML("""
     <div class="header-container">
         <h1 style="color: white; margin: 0;">ADA Sales Intelligence</h1>
-        <p style="color: #E0E7ED; opacity: 0.9;">Understand clients better using AI-powered research.</p>
+        <p style="color: #E0E7ED; opacity: 0.9; font-size: 1.1em; margin-top: 10px;">
+            This app uses AI to generate research and insights that enable sales teams <br>
+            to approach prospects with sharper strategy and context.
+        </p>
     </div>
     <div class="pillar-row">
         <a href="https://adaglobal.com" target="_blank" class="pillar-card"><div>🔮</div><b>Identity</b></a>
