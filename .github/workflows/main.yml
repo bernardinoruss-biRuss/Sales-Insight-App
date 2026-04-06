@@ -1,4 +1,5 @@
 name: Sync to Hugging Face
+
 on:
   push:
     branches: [main]
@@ -7,14 +8,19 @@ on:
 jobs:
   sync-to-hub:
     runs-on: ubuntu-latest
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           lfs: true
-      - name: Push to hub
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: git push --force https://byRuss:$HF_TOKEN@huggingface.co/spaces/byRuss/SalesIntelligence main
+
+      - name: Configure Git for HF
+        run: |
+          git config --global credential.helper store
+          echo "https://byRuss:${{ secrets.HF_TOKEN }}@huggingface.co" > ~/.git-credentials
+
+      - name: Add HF remote and push
+        run: |
+          git remote add hf https://huggingface.co/spaces/byRuss/SalesIntelligence || true
+          git fetch hf || true
+          git push hf main --force
