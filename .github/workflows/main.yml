@@ -18,13 +18,7 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          # 1. Identity Config
           git config --global user.email "bot@huggingface.co"
           git config --global user.name "HF Sync Bot"
-          
-          # 2. Hard Reset and Sync
-          # This ensures GitHub and Hugging Face are perfectly aligned
           git remote add hf https://bernardinoruss-biRuss:$HF_TOKEN@huggingface.co/spaces/bernardinoruss-biRuss/SalesIntelligence
-          
-          # 3. Force the push
           git push hf main --force
