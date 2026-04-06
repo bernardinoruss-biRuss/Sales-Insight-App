@@ -1,23 +1,21 @@
 import os
 import gradio as gr
-import google.generativeai as genai
+from google import genai
 from tavily import TavilyClient
 import tempfile
 from fpdf import FPDF
 
 # --- CONFIG ---
-GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
+client = genai.Client(api_key=os.environ.get("GOOGLE_API_KEY"))
 TAVILY_API_KEY = os.environ.get("TAVILY_API_KEY")
-ACCESS_CODE = "PSNDB"
-
-genai.configure(api_key=GOOGLE_API_KEY)
 tavily = TavilyClient(api_key=TAVILY_API_KEY)
+ACCESS_CODE = "PSNDB"
 
 # --- LUXURY CSS ---
 luxury_css = """
 body, .gradio-container { background-color: #000000 !important; color: #FFFFFF !important; }
-#title { text-align: center; padding: 40px; font-family: serif; }
-.gr-button-primary { background: #008080 !important; border: none !important; border-radius: 40px !important; color: white !important; }
+.luxury-text { text-align: center; color: white !important; }
+.gr-button-primary { background: #008080 !important; border: none !important; border-radius: 40px !important; }
 input, textarea { background: #111 !important; border: 1px solid #333 !important; color: white !important; }
 .orb { width: 100px; height: 100px; background: radial-gradient(circle, #008080 0%, #000 70%); border-radius: 50%; box-shadow: 0 0 40px #008080; margin: 20px auto; animation: pulse 3s infinite; }
 @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 0.6; } 50% { transform: scale(1.1); opacity: 1; } }
@@ -26,10 +24,12 @@ input, textarea { background: #111 !important; border: 1px solid #333 !important
 def get_intel(company, persona, code):
     if code != ACCESS_CODE: return gr.update(visible=False), "❌ Access Denied", None
     try:
-        search = tavily.search(query=f"{company} {persona} 2026 strategic priorities", search_depth="advanced")
+        search = tavily.search(query=f"{company} {persona} priorities 2026", search_depth="advanced")
         context = "\\n".join([r['content'] for r in search['results']])
-        model = genai.GenerativeModel('gemini-2.5-flash')
-        response = model.generate_content(f"Provide a luxury sales briefing for {company} targeting {persona}. Data: {context}").text
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=f"Strategic Briefing for {company} ({persona}): {context}"
+        ).text
         
         pdf = FPDF()
         pdf.add_page()
@@ -41,8 +41,8 @@ def get_intel(company, persona, code):
     except Exception as e:
         return gr.update(visible=False), f"Error: {str(e)}", None
 
-with gr.Blocks(css=luxury_css) as demo:
-    gr.HTML("<div id='title'><h1>ADA STRATEGIC INTELLIGENCE</h1><p>Luxury 2026 Research Engine</p></div>")
+with gr.Blocks(css=luxury_css, theme=gr.themes.Base()) as demo:
+    gr.HTML("<div class='luxury-text'><h1>ADA STRATEGIC INTELLIGENCE</h1><p>2026 Premium Research</p></div>")
     gr.HTML("<div class='orb'></div>")
     
     with gr.Column() as login:
@@ -52,11 +52,11 @@ with gr.Blocks(css=luxury_css) as demo:
     with gr.Column(visible=False) as main_app:
         comp = gr.Textbox(label="COMPANY")
         pers = gr.Textbox(label="PERSONA")
-        run = gr.Button("GENERATE", variant="primary")
+        run = gr.Button("GENERATE BRIEFING", variant="primary")
         out = gr.Markdown()
-        file = gr.File(label="PDF Report")
+        file = gr.File(label="DOWNLOAD PDF")
 
-    btn_login.click(lambda x: gr.update(visible=x=="PSNDB"), [pwd], [main_app])
+    btn_login.click(lambda x: gr.update(visible=x==ACCESS_CODE), [pwd], [main_app])
     run.click(get_intel, [comp, pers, pwd], [main_app, out, file])
 
 if __name__ == "__main__":
