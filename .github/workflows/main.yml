@@ -5,9 +5,6 @@ on:
     branches: [main]
   workflow_dispatch:
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   sync-to-hub:
     runs-on: ubuntu-latest
@@ -19,5 +16,12 @@ jobs:
           lfs: true
 
       - name: Push to Hugging Face Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          git push https://byRuss:${{ secrets.HF_TOKEN }}@huggingface.co/spaces/byRuss/SalesIntelligence main --force
+          # Configure git to prevent 'detached HEAD' or branch mismatch errors
+          git config --global user.email "bot@huggingface.co"
+          git config --global user.name "Hugging Face Sync Bot"
+          
+          # Use a more robust push command
+          git push --force https://byRuss:$HF_TOKEN@huggingface.co/spaces/byRuss/SalesIntelligence main
