@@ -1,5 +1,4 @@
-gradio
+gradio>=5.0.0
 google-generativeai
 tavily-python
 fpdf2
-sqlite3
