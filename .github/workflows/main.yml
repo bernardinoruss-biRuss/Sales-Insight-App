@@ -15,13 +15,17 @@ jobs:
           fetch-depth: 0
           lfs: true
 
-      - name: Push to Hugging Face Space
+      - name: Push to Hugging Face
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          # Configure git to prevent 'detached HEAD' or branch mismatch errors
+          # 1. Identity setup (required for some git operations)
           git config --global user.email "bot@huggingface.co"
-          git config --global user.name "Hugging Face Sync Bot"
-          
-          # Use a more robust push command
-          git push --force https://byRuss:$HF_TOKEN@huggingface.co/spaces/byRuss/SalesIntelligence main
+          git config --global user.name "Hugging Face Sync"
+
+          # 2. Add the Hugging Face repo as a remote named 'hf'
+          # This is cleaner than pushing to a raw URL
+          git remote add hf https://byRuss:$HF_TOKEN@huggingface.co/spaces/byRuss/SalesIntelligence
+
+          # 3. Force push the local 'main' branch to the remote 'hf' branch named 'main'
+          git push hf main --force
