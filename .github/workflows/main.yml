@@ -20,6 +20,6 @@ jobs:
         run: |
           git config --global user.email "bot@huggingface.co"
           git config --global user.name "HF Sync Bot"
-          # We force the remote to point to your EXACT space name
+          # This line forces the connection to your specific Space
           git remote add hf https://bernardinoruss-biRuss:$HF_TOKEN@huggingface.co/spaces/byRuss/SalesIntelligence || git remote set-url hf https://bernardinoruss-biRuss:$HF_TOKEN@huggingface.co/spaces/byRuss/SalesIntelligence
           git push hf main --force
