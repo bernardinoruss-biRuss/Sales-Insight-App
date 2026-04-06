@@ -14,12 +14,12 @@ jobs:
           fetch-depth: 0
           lfs: true
 
-      - name: Push to Hugging Face
+      - name: Force Push Sync
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           git config --global user.email "bot@huggingface.co"
           git config --global user.name "HF Sync Bot"
-          # This line forces the connection to your specific Space
-          git remote add hf https://bernardinoruss-biRuss:$HF_TOKEN@huggingface.co/spaces/byRuss/SalesIntelligence || git remote set-url hf https://bernardinoruss-biRuss:$HF_TOKEN@huggingface.co/spaces/byRuss/SalesIntelligence
+          git remote remove hf || true
+          git remote add hf https://bernardinoruss-biRuss:$HF_TOKEN@huggingface.co/spaces/byRuss/SalesIntelligence
           git push hf main --force
