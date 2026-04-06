@@ -10,5 +10,5 @@ pinned: false
 license: apache-2.0
 ---
 
-# ADA Sales Intelligence
-Premium Sales AI Dashboard. Access Code: **PSNDB**
+# ADA Sales Intel
+Code: **PSNDB**
