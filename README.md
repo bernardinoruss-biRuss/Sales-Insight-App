@@ -10,5 +10,5 @@ pinned: false
 license: apache-2.0
 ---
 
-# ADA Sales Intel
-Code: **PSNDB**
+# ADA Sales Intelligence
+Access Code: **PSNDB**
