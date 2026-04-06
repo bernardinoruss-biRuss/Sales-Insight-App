@@ -1,5 +1,4 @@
 name: Sync to Hugging Face
-
 on:
   push:
     branches: [main]
@@ -9,23 +8,15 @@ jobs:
   sync-to-hub:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           lfs: true
 
-      - name: Push to Hugging Face
+      - name: Push to HF
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          # 1. Identity setup (required for some git operations)
-          git config --global user.email "bot@huggingface.co"
-          git config --global user.name "Hugging Face Sync"
-
-          # 2. Add the Hugging Face repo as a remote named 'hf'
-          # This is cleaner than pushing to a raw URL
           git remote add hf https://byRuss:$HF_TOKEN@huggingface.co/spaces/byRuss/SalesIntelligence
-
-          # 3. Force push the local 'main' branch to the remote 'hf' branch named 'main'
+          # We force push to ensure the Space matches your GitHub exactly
           git push hf main --force
